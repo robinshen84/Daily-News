@@ -1,0 +1,4 @@
+Flask==2.3.3
+Werkzeug==2.3.7
+playwright==1.40.0
+Pillow==10.0.1

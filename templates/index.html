@@ -1,0 +1,1791 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日报自动生成器</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --light-bg: #f8f9fa;
+            --dark-text: #2c3e50;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 16px;
+        }
+
+        .main-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            margin: 1rem auto;
+            max-width: 1200px;
+            overflow: hidden;
+        }
+
+        /* 手机端优化 */
+        @media (max-width: 768px) {
+            body {
+                font-size: 18px;
+            }
+            
+            .main-container {
+                margin: 0.5rem;
+                border-radius: 15px;
+                max-width: none;
+            }
+        }
+
+        /* 平板端优化 */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .main-container {
+                max-width: 900px;
+            }
+        }
+
+        /* 手机端表单优化 */
+        @media (max-width: 768px) {
+            /* 增大表单元素字体 */
+            .form-control, .form-select, .btn {
+                font-size: 1rem;
+            }
+            
+            .form-label {
+                font-size: 1.1rem;
+                font-weight: 500;
+            }
+            
+            .color-theme-card {
+                padding: 0.8rem;
+            }
+            
+            .tag-option {
+                padding: 0.8rem 0.5rem;
+                font-size: 0.9rem;
+            }
+            
+            textarea.form-control {
+                font-size: 1rem;
+                line-height: 1.5;
+            }
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 300;
+        }
+
+        .header p {
+            margin: 0.5rem 0 0 0;
+            opacity: 0.9;
+        }
+
+        /* 手机端头部优化 */
+        @media (max-width: 768px) {
+            .header {
+                padding: 1.5rem 1rem;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .header p {
+                font-size: 1rem;
+            }
+        }
+
+        .content {
+            padding: 2rem;
+        }
+
+        .form-section {
+            background: var(--light-bg);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-section h3 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* 手机端内容区域优化 */
+        @media (max-width: 768px) {
+            .content {
+                padding: 1rem;
+            }
+            
+            .form-section {
+                padding: 1rem;
+                margin-bottom: 1.5rem;
+                border-radius: 10px;
+            }
+            
+            .form-section h3 {
+                font-size: 1.2rem;
+                margin-bottom: 1rem;
+            }
+        }
+
+        .color-theme-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 0.8rem;
+            margin-bottom: 1rem;
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 0.8rem;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            background: #fafafa;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        /* 滚动条样式 */
+        .color-theme-grid::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .color-theme-grid::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .color-theme-grid::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+
+        .color-theme-grid::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        /* 手机端颜色主题网格优化 */
+        @media (max-width: 768px) {
+            .color-theme-grid {
+                grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+                gap: 0.6rem;
+                max-height: 400px;
+                padding: 0.6rem;
+            }
+        }
+
+        /* 新闻格式选择器样式 */
+        .format-option {
+            position: relative;
+            margin-bottom: 0;
+        }
+
+        .format-option input[type="radio"] {
+            display: none;
+        }
+
+        .format-label {
+            display: block;
+            padding: 1rem;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            background: #ffffff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            height: 100%;
+            margin: 0;
+        }
+
+        .format-label:hover {
+            border-color: #007bff;
+            background: #f8f9ff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,123,255,0.1);
+        }
+
+        .format-option input[type="radio"]:checked + .format-label {
+            border-color: #007bff;
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(0,123,255,0.2);
+        }
+
+        .format-option input[type="radio"]:checked + .format-label .format-example {
+            background: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.9);
+        }
+
+        .format-label i {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .format-label strong {
+            display: block;
+            margin-bottom: 0.25rem;
+            font-size: 1rem;
+        }
+
+        .format-label small {
+            display: block;
+            margin-bottom: 0.5rem;
+            opacity: 0.8;
+            font-size: 0.8rem;
+        }
+
+        .format-example {
+            background: #f8f9fa;
+            padding: 0.5rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            color: #6c757d;
+            margin-top: 0.5rem;
+            font-style: italic;
+        }
+
+        /* 手机端格式选择器优化 */
+        @media (max-width: 768px) {
+            .format-label {
+                padding: 0.8rem;
+            }
+            
+            .format-label i {
+                font-size: 1.2rem;
+            }
+            
+            .format-label strong {
+                font-size: 0.9rem;
+            }
+            
+            .format-label small {
+                font-size: 0.75rem;
+            }
+            
+            .format-example {
+                font-size: 0.7rem;
+                padding: 0.4rem;
+            }
+        }
+
+        .color-theme-card {
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            background: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .color-theme-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            border-color: var(--secondary-color);
+        }
+
+        .color-theme-card.selected {
+            border-color: var(--secondary-color);
+            background-color: rgba(52, 152, 219, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.3);
+        }
+
+        .color-theme-card.selected::after {
+            content: "✓";
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: var(--secondary-color);
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .color-preview {
+            height: 50px;
+            border-radius: 8px;
+            margin-bottom: 0.8rem;
+            border: 1px solid rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .color-preview::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+        }
+
+        .logo-upload-area {
+            border: 2px dashed #dee2e6;
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logo-upload-area:hover {
+            border-color: var(--secondary-color);
+            background-color: rgba(52, 152, 219, 0.05);
+        }
+
+        .logo-upload-area.dragover {
+            border-color: var(--success-color);
+            background-color: rgba(39, 174, 96, 0.1);
+        }
+
+        .logo-preview {
+            max-width: 100px;
+            max-height: 100px;
+            border-radius: 50%;
+            margin: 1rem auto;
+            display: none;
+        }
+
+        .news-item {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .news-item .remove-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+        }
+
+        .preview-section {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            border: 1px solid #e9ecef;
+        }
+
+        .preview-iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+        }
+
+        .btn-primary {
+            background: var(--secondary-color);
+            border-color: var(--secondary-color);
+            padding: 0.75rem 2rem;
+            font-weight: 500;
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            border-color: var(--success-color);
+            padding: 0.75rem 2rem;
+            font-weight: 500;
+        }
+
+        /* 手机端按钮优化 */
+        @media (max-width: 768px) {
+            .btn-primary, .btn-success, .btn-outline-primary, .btn-outline-secondary {
+                padding: 1rem 1.5rem;
+                font-size: 1rem;
+                width: 100%;
+                margin-bottom: 0.5rem;
+            }
+            
+            .text-center .btn-primary,
+            .text-center .btn-success {
+                width: auto;
+                min-width: 160px;
+            }
+        }
+
+        .btn-outline-primary {
+            color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .loading .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+
+        .tag-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .tag-option {
+            padding: 0.5rem;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .tag-option:hover {
+            background-color: #f8f9fa;
+        }
+
+        .tag-option.selected {
+            background-color: var(--secondary-color);
+            color: white;
+            border-color: var(--secondary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="header">
+            <h1><i class="fas fa-newspaper"></i> 日报自动生成器 v2.0</h1>
+            <p>轻松创建专业的日报，支持智能解析和一键生成图片</p>
+            <p style="font-size: 0.9rem; opacity: 0.8; margin-top: 1rem;">
+                <i class="fas fa-code"></i> 此应用由靠谱瓦叔制作
+            </p>
+        </div>
+
+        <div class="content">
+            <!-- 基本信息 -->
+            <div class="form-section">
+                <h3><i class="fas fa-info-circle"></i> 基本信息</h3>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="reportName" class="form-label">日报名称</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="reportName" placeholder="请输入日报名称">
+                            <span class="input-group-text">日报</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="signature" class="form-label">签名/标语</label>
+                        <input type="text" class="form-control" id="signature" 
+                               value="精心策展，高效传达 - 洞察科技未来" 
+                               placeholder="请输入签名或标语">
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="showCreator" checked>
+                            <label class="form-check-label" for="showCreator">
+                                <i class="fas fa-user-tag"></i> 在日报中显示制作者信息
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logo上传 -->
+            <div class="form-section">
+                <h3><i class="fas fa-image"></i> Logo设置</h3>
+                <div class="logo-upload-area" id="logoUploadArea">
+                    <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">点击或拖拽上传Logo图片</p>
+                    <p class="small text-muted">支持 PNG, JPG, JPEG, GIF, WEBP 格式</p>
+                    <input type="file" id="logoInput" accept="image/*" style="display: none;">
+                    <img class="logo-preview" id="logoPreview" alt="Logo预览">
+                </div>
+            </div>
+
+            <!-- 颜色主题 -->
+            <div class="form-section">
+                <h3><i class="fas fa-palette"></i> 颜色主题</h3>
+                <p class="text-muted mb-3">
+                    <i class="fas fa-sparkles"></i> 
+                    选择您喜欢的颜色主题，包含苹果风格柔和配色、精美渐变和商务配色，打造专业而舒适的视觉体验
+                </p>
+                <div class="color-theme-grid">
+                    {% for theme_id, theme in color_themes.items() %}
+                    <div class="color-theme-card" data-theme="{{ theme_id }}">
+                        <div class="color-preview" style="background: {{ theme.header_gradient }};"></div>
+                        <strong>{{ theme.name }}</strong>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="mt-3">
+                    <h5>自定义颜色</h5>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label class="form-label">主色调</label>
+                            <input type="color" class="form-control form-control-color" id="customPrimary" value="#2c3e50">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">次色调</label>
+                            <input type="color" class="form-control form-control-color" id="customSecondary" value="#34495e">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">强调色</label>
+                            <input type="color" class="form-control form-control-color" id="customAccent" value="#e74c3c">
+                        </div>
+                        <div class="col-md-3">
+                            <button type="button" class="btn btn-outline-primary mt-4" id="useCustomColors">
+                                使用自定义颜色
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 新闻内容 -->
+            <div class="form-section">
+                <h3><i class="fas fa-list"></i> 新闻内容</h3>
+                
+                <!-- 批量导入区域 -->
+                <div class="mb-4">
+                    <h5><i class="fas fa-magic"></i> 智能解析 <span class="badge bg-success">升级版</span></h5>
+                    <p class="text-muted">
+                        <strong>🚀 全新升级！</strong> 支持多种新闻格式智能解析：<br>
+                        ✅ 自动移除标题和编号<br>
+                        ✅ 智能分离标题和内容<br>
+                        ✅ 自动识别公司名称和新闻类型标签
+                    </p>
+                    
+                    <!-- 新闻格式选择 -->
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="fas fa-newspaper"></i> 选择新闻格式
+                        </label>
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <div class="format-option" data-format="ai">
+                                    <input type="radio" id="formatAI" name="newsFormat" value="ai" checked>
+                                    <label for="formatAI" class="format-label">
+                                        <i class="fas fa-robot"></i>
+                                        <strong>AI新闻格式</strong>
+                                        <small>编号列表格式，适合AI、科技资讯</small>
+                                        <div class="format-example">
+                                            1. 阿里巴巴发布新模型，提升识别准确率...
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="format-option" data-format="general">
+                                    <input type="radio" id="formatGeneral" name="newsFormat" value="general">
+                                    <label for="formatGeneral" class="format-label">
+                                        <i class="fas fa-globe"></i>
+                                        <strong>综合新闻格式</strong>
+                                        <small>标题:内容格式，适合时政、财经</small>
+                                        <div class="format-example">
+                                            特朗普抵达英国进行国事访问:特朗普今天...
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <textarea class="form-control mb-3" id="bulkNewsInput" rows="8" 
+                              placeholder="请根据选择的格式粘贴新闻内容：&#10;&#10;【AI新闻格式】&#10;AI早报 2025年09月17日&#10;1. 阿里巴巴发布端到端语音识别大模型...&#10;2. 腾讯正式发布混元3D 3.0模型...&#10;&#10;【综合新闻格式】&#10;特朗普抵达英国进行国事访问:特朗普今天抵达英国，与夫人一同下飞机...&#10;美股收盘百度大涨超7%:在美国股市中，百度股票收盘上涨超过7%..."></textarea>
+                    <button type="button" class="btn btn-primary" id="parseNewsBtn">
+                        <i class="fas fa-magic"></i> 智能解析新闻
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary ms-2" id="clearAllNews">
+                        <i class="fas fa-trash"></i> 清空所有
+                    </button>
+                </div>
+                
+                <hr>
+                
+                <div id="newsItems">
+                    <!-- 新闻条目将动态添加到这里 -->
+                </div>
+                <button type="button" class="btn btn-outline-primary" id="addNewsItem">
+                    <i class="fas fa-plus"></i> 手动添加新闻
+                </button>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="text-center">
+                <button type="button" class="btn btn-primary me-3" id="generatePreview">
+                    <i class="fas fa-eye"></i> 生成预览
+                </button>
+                <button type="button" class="btn btn-success" id="exportImage" disabled>
+                    <i class="fas fa-download"></i> 导出图片
+                </button>
+            </div>
+
+            <!-- 加载动画 -->
+            <div class="loading" id="loading">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">加载中...</span>
+                </div>
+                <p class="mt-3">正在生成预览...</p>
+            </div>
+
+            <!-- 预览区域 -->
+            <div class="preview-section" id="previewSection" style="display: none;">
+                <h3><i class="fas fa-eye"></i> 预览</h3>
+                <iframe class="preview-iframe" id="previewIframe"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 全局变量
+        let currentLogo = '';
+        let currentTheme = 'classic';
+        let newsItemCount = 0;
+        let generatedHtml = '';
+
+        // 新闻标签数据
+        const newsTags = {{ news_tags | tojson }};
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+
+        function initializeApp() {
+            setupLogoUpload();
+            setupColorThemes();
+            setupNewsManagement();
+            setupPreviewGeneration();
+            setupImageExport();
+            
+            // 确保智能解析区域显示
+            console.log('智能解析功能已加载');
+            
+            // 设置新闻格式切换事件
+            setupNewsFormatToggle();
+        }
+
+        // Logo上传功能
+        function setupLogoUpload() {
+            setupLogoUploadEvents();
+        }
+
+        // 设置Logo上传事件监听器（可复用）
+        function setupLogoUploadEvents() {
+            const uploadArea = document.getElementById('logoUploadArea');
+            const fileInput = document.getElementById('logoInput');
+
+            if (!uploadArea) {
+                console.error('Logo上传区域未找到');
+                return;
+            }
+
+            // 移除旧的事件监听器（如果存在）
+            uploadArea.removeEventListener('click', logoClickHandler);
+            uploadArea.removeEventListener('dragover', logoDragOverHandler);
+            uploadArea.removeEventListener('dragleave', logoDragLeaveHandler);
+            uploadArea.removeEventListener('drop', logoDropHandler);
+            if (fileInput) {
+                fileInput.removeEventListener('change', logoChangeHandler);
+            }
+
+            // 添加新的事件监听器
+            uploadArea.addEventListener('click', logoClickHandler);
+            uploadArea.addEventListener('dragover', logoDragOverHandler);
+            uploadArea.addEventListener('dragleave', logoDragLeaveHandler);
+            uploadArea.addEventListener('drop', logoDropHandler);
+            if (fileInput) {
+                fileInput.addEventListener('change', logoChangeHandler);
+            }
+        }
+
+        // 事件处理函数
+        function logoClickHandler() {
+            const fileInput = document.getElementById('logoInput');
+            if (fileInput) {
+                fileInput.click();
+            }
+        }
+
+        function logoDragOverHandler(e) {
+                e.preventDefault();
+            const uploadArea = document.getElementById('logoUploadArea');
+                uploadArea.classList.add('dragover');
+        }
+
+        function logoDragLeaveHandler() {
+            const uploadArea = document.getElementById('logoUploadArea');
+                uploadArea.classList.remove('dragover');
+        }
+
+        function logoDropHandler(e) {
+                e.preventDefault();
+            const uploadArea = document.getElementById('logoUploadArea');
+                uploadArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFileUpload(files[0]);
+                }
+        }
+
+        function logoChangeHandler(e) {
+                if (e.target.files.length > 0) {
+                    handleFileUpload(e.target.files[0]);
+                }
+        }
+
+        function handleFileUpload(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('请选择图片文件！支持格式：PNG、JPG、JPEG、GIF、WEBP');
+                return;
+            }
+
+            // 检查文件大小 (16MB)
+            if (file.size > 16 * 1024 * 1024) {
+                alert('文件大小不能超过16MB！');
+                return;
+            }
+
+            // 显示上传中状态
+            const uploadArea = document.getElementById('logoUploadArea');
+            uploadArea.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">上传中...</span>
+                    </div>
+                    <p class="mt-2">正在上传Logo...</p>
+                </div>
+            `;
+
+            const formData = new FormData();
+            formData.append('logo', file);
+
+            fetch('/upload_logo', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    currentLogo = data.data;
+                    
+                    // 更新上传区域，保持可点击状态
+                    const uploadArea = document.getElementById('logoUploadArea');
+                    uploadArea.innerHTML = `
+                        <img src="${currentLogo}" class="logo-preview" id="logoPreview" style="display: block; max-width: 100px; max-height: 100px; margin: 0 auto; border-radius: 50%; object-fit: cover;">
+                        <p class="text-success mt-2"><i class="fas fa-check-circle"></i> Logo上传成功！</p>
+                        <p class="small text-muted">点击重新上传更换Logo</p>
+                        <input type="file" id="logoInput" accept="image/*" style="display: none;">
+                    `;
+                    
+                    // 重新设置事件监听器
+                    setupLogoUploadEvents();
+                } else {
+                    alert('上传失败：' + data.error);
+                    // 恢复上传区域到初始状态
+                    restoreUploadArea();
+                }
+            })
+            .catch(error => {
+                console.error('上传错误:', error);
+                alert('上传失败，请重试');
+                // 恢复上传区域到初始状态
+                restoreUploadArea();
+            });
+        }
+
+        // 恢复上传区域到初始状态
+        function restoreUploadArea() {
+            const uploadArea = document.getElementById('logoUploadArea');
+            uploadArea.innerHTML = `
+                <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                <p class="text-muted">点击或拖拽上传Logo图片</p>
+                <p class="small text-muted">支持 PNG, JPG, JPEG, GIF, WEBP 格式</p>
+                <input type="file" id="logoInput" accept="image/*" style="display: none;">
+                <img class="logo-preview" id="logoPreview" alt="Logo预览" style="display: none;">
+            `;
+            
+            // 重新设置事件监听器
+            setupLogoUploadEvents();
+        }
+
+        // 颜色主题功能
+        function setupColorThemes() {
+            const themeCards = document.querySelectorAll('.color-theme-card');
+            const customButton = document.getElementById('useCustomColors');
+
+            themeCards.forEach(card => {
+                card.addEventListener('click', () => {
+                    themeCards.forEach(c => c.classList.remove('selected'));
+                    card.classList.add('selected');
+                    currentTheme = card.dataset.theme;
+                });
+            });
+
+            // 默认选择第一个主题
+            themeCards[0].classList.add('selected');
+
+            customButton.addEventListener('click', () => {
+                themeCards.forEach(c => c.classList.remove('selected'));
+                currentTheme = 'custom';
+            });
+        }
+
+        // 新闻管理功能
+        function setupNewsManagement() {
+            document.getElementById('addNewsItem').addEventListener('click', addNewsItem);
+            document.getElementById('parseNewsBtn').addEventListener('click', parseNewsContent);
+            document.getElementById('clearAllNews').addEventListener('click', clearAllNews);
+        }
+
+        function addNewsItem() {
+            newsItemCount++;
+            const container = document.getElementById('newsItems');
+            
+            const newsItem = document.createElement('div');
+            newsItem.className = 'news-item';
+            newsItem.dataset.index = newsItemCount;
+            
+            newsItem.innerHTML = `
+                <button type="button" class="remove-btn" onclick="removeNewsItem(${newsItemCount})">
+                    <i class="fas fa-times"></i>
+                </button>
+                
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <label class="form-label">标题</label>
+                        <input type="text" class="form-control news-title" 
+                               placeholder="请输入新闻标题">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">公司/机构</label>
+                        <input type="text" class="form-control news-company" 
+                               placeholder="请输入公司名称">
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">描述</label>
+                    <textarea class="form-control news-description" rows="3" 
+                              placeholder="请输入新闻描述"></textarea>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">标签类型</label>
+                    <div class="tag-selector">
+                        ${Object.entries(newsTags).map(([key, tag]) => 
+                            `<div class="tag-option" data-tag="${key}">
+                                <i class="fas ${tag.icon}"></i> ${tag.name}
+                             </div>`
+                        ).join('')}
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(newsItem);
+            
+            // 设置标签选择器
+            const tagOptions = newsItem.querySelectorAll('.tag-option');
+            tagOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    tagOptions.forEach(opt => opt.classList.remove('selected'));
+                    option.classList.add('selected');
+                });
+            });
+            
+            // 默认选择第一个标签
+            tagOptions[0].classList.add('selected');
+        }
+
+        function removeNewsItem(index) {
+            const item = document.querySelector(`[data-index="${index}"]`);
+            if (item) {
+                item.remove();
+            }
+        }
+
+        // 解析新闻内容
+        function parseNewsContent() {
+            const bulkInput = document.getElementById('bulkNewsInput');
+            const content = bulkInput.value.trim();
+            
+            if (!content) {
+                alert('请输入新闻内容');
+                return;
+            }
+
+            // 预处理内容：移除标题行和格式化
+            let processedContent = preprocessContent(content);
+
+            // 按行分割新闻
+            const newsLines = processedContent.split('\n').filter(line => line.trim());
+            
+            // 清空现有新闻
+            clearAllNews();
+            
+            let successCount = 0;
+            newsLines.forEach(line => {
+                const parsedNews = parseNewsLine(line.trim());
+                if (parsedNews) {
+                    addNewsItemWithData(parsedNews);
+                    successCount++;
+                }
+            });
+            
+            // 清空输入框
+            bulkInput.value = '';
+            
+            alert(`成功解析 ${successCount} 条新闻！`);
+        }
+
+        // 预处理内容：移除标题、编号等
+        function preprocessContent(content) {
+            let lines = content.split('\n');
+            let processedLines = [];
+            
+            for (let line of lines) {
+                line = line.trim();
+                
+                // 跳过空行
+                if (!line) continue;
+                
+                // 跳过标题行（如：AI早报 2025年09月16日）
+                if (isHeaderLine(line)) {
+                    console.log('跳过标题行:', line);
+                    continue;
+                }
+                
+                // 处理编号新闻（如：1. 新闻内容）
+                const cleanedLine = removeNumberPrefix(line);
+                if (cleanedLine) {
+                    processedLines.push(cleanedLine);
+                }
+            }
+            
+            return processedLines.join('\n');
+        }
+
+        // 判断是否为标题行
+        function isHeaderLine(line) {
+            // 匹配各种标题格式
+            const headerPatterns = [
+                /^.*早报.*\d{4}年\d{1,2}月\d{1,2}日.*$/,    // AI早报 2025年09月16日
+                /^.*日报.*\d{4}年\d{1,2}月\d{1,2}日.*$/,    // 科技日报 2025年09月16日
+                /^.*快讯.*\d{4}年\d{1,2}月\d{1,2}日.*$/,    // 快讯 2025年09月16日
+                /^.*\d{4}-\d{1,2}-\d{1,2}.*$/,             // 2025-09-16 格式
+                /^.*\d{1,2}\/\d{1,2}\/\d{4}.*$/,           // 09/16/2025 格式
+                /^【.*】.*$/,                               // 【标题】格式
+                /^.*新闻.*汇总.*$/,                         // 新闻汇总
+                /^.*资讯.*汇总.*$/,                         // 资讯汇总
+                /^今日.*$/,                                 // 今日开头
+                /^.*摘要.*$/                                // 摘要
+            ];
+            
+            return headerPatterns.some(pattern => pattern.test(line));
+        }
+
+        // 移除编号前缀
+        function removeNumberPrefix(line) {
+            // 匹配各种编号格式
+            const numberPatterns = [
+                /^(\d+)[\.\。]\s*(.+)$/,           // 1. 内容 或 1。内容
+                /^(\d+)[\)）]\s*(.+)$/,           // 1) 内容 或 1）内容
+                /^【\d+】\s*(.+)$/,               // 【1】内容
+                /^（\d+）\s*(.+)$/,               // （1）内容
+                /^[（\(]\d+[）\)]\s*(.+)$/        // (1)内容 或 （1）内容
+            ];
+            
+            for (let pattern of numberPatterns) {
+                const match = line.match(pattern);
+                if (match) {
+                    return match[match.length - 1].trim(); // 返回最后一个捕获组（内容部分）
+                }
+            }
+            
+            return line; // 如果没有匹配到编号格式，返回原内容
+        }
+
+        // 设置新闻格式切换功能
+        function setupNewsFormatToggle() {
+            const formatRadios = document.querySelectorAll('input[name="newsFormat"]');
+            const textarea = document.getElementById('bulkNewsInput');
+            
+            const placeholders = {
+                'ai': '请粘贴AI新闻格式内容：\n\nAI早报 2025年09月17日\n\n1. 阿里巴巴通义实验室发布端到端语音识别大模型FunAudio-ASR，提升高噪声环境识别准确率，降低幻觉。\n\n2. 腾讯正式发布混元3D 3.0模型，建模精度提升3倍，几何分辨率达1536³，支持36亿体素超高清建模。\n\n3. 字节跳动与香港大学联合推出开源视觉推理模型Mini-o3...',
+                'general': '请粘贴综合新闻格式内容：\n\n特朗普抵达英国进行国事访问:特朗普今天抵达英国，与夫人一同下飞机，展开国事访问，引发民众抗议活动。\n\n特朗普到访英国引发民众抗议:特朗普的英国访问引发大量抗议者聚集，展示对他的政治立场的不满。\n\n以军向荷台达港居民发出紧急撤离警告:以色列军方已发出警告，要求在也门荷台达港的居民紧急撤离。\n\n美股收盘百度大涨超7%:在美国股市中，百度股票收盘上涨超过7%，受市场关注。'
+            };
+            
+            // 设置初始placeholder
+            if (textarea) {
+                const selectedFormat = getSelectedNewsFormat();
+                textarea.placeholder = placeholders[selectedFormat];
+            }
+            
+            // 为每个单选按钮添加事件监听器
+            formatRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.checked && textarea) {
+                        textarea.placeholder = placeholders[this.value];
+                        console.log('切换到新闻格式:', this.value);
+                    }
+                });
+            });
+        }
+
+        // 获取选中的新闻格式
+        function getSelectedNewsFormat() {
+            const formatRadios = document.querySelectorAll('input[name="newsFormat"]');
+            for (let radio of formatRadios) {
+                if (radio.checked) {
+                    return radio.value;
+                }
+            }
+            return 'ai'; // 默认为AI格式
+        }
+
+        // 解析单条新闻
+        function parseNewsLine(line) {
+            if (!line || line.length < 10) return null;
+            
+            const newsFormat = getSelectedNewsFormat();
+            let title = '';
+            let description = '';
+            let company = '';
+            let tag = 'tech'; // 默认标签
+            
+            if (newsFormat === 'general') {
+                // 综合新闻格式解析
+                const parsed = parseGeneralNewsFormat(line);
+                title = parsed.title;
+                description = parsed.description;
+            } else {
+                // AI新闻格式解析（原有逻辑）
+                const parsed = intelligentTitleContentSplit(line);
+                title = parsed.title;
+                description = parsed.description;
+            }
+            
+            // 提取公司名称
+            company = extractCompanyName(line);
+            
+            // 智能推测标签
+            tag = predictTag(line);
+            
+            return {
+                title: title,
+                description: description,
+                company: company,
+                tag: tag
+            };
+        }
+
+        // 解析综合新闻格式（标题:内容）
+        function parseGeneralNewsFormat(line) {
+            // 综合新闻格式：标题:内容
+            // 例如：特朗普抵达英国进行国事访问:特朗普今天抵达英国，与夫人一同下飞机，展开国事访问，引发民众抗议活动。
+            
+            // 查找第一个冒号作为分隔符
+            const colonIndex = line.indexOf(':');
+            const chineseColonIndex = line.indexOf('：');
+            
+            let splitIndex = -1;
+            if (colonIndex > 0 && chineseColonIndex > 0) {
+                // 如果两种冒号都存在，选择较前面的那个
+                splitIndex = Math.min(colonIndex, chineseColonIndex);
+            } else if (colonIndex > 0) {
+                splitIndex = colonIndex;
+            } else if (chineseColonIndex > 0) {
+                splitIndex = chineseColonIndex;
+            }
+            
+            if (splitIndex > 0 && splitIndex < line.length - 10) { // 确保冒号后面还有足够的内容
+                const title = line.substring(0, splitIndex).trim();
+                const description = line.substring(splitIndex + 1).trim();
+                
+                // 验证标题和内容都有意义的长度
+                if (title.length >= 5 && description.length >= 10) {
+                    return {
+                        title: title,
+                        description: description
+                    };
+                }
+            }
+            
+            // 如果没有找到合适的冒号分割，尝试其他分割方法
+            // 方法2: 查找句号分割点（第一句作为标题）
+            const sentences = line.split(/[。！？\.!?]/);
+            if (sentences.length >= 2 && sentences[0].length > 5 && sentences[0].length < 50) {
+                const title = sentences[0].trim();
+                const description = sentences.slice(1).join('').trim();
+                if (description.length > 5) {
+                    return {
+                        title: title,
+                        description: description
+                    };
+                }
+            }
+            
+            // 方法3: 根据长度智能分割
+            if (line.length > 30) {
+                // 找到中间位置附近的合适分割点
+                const midPoint = Math.floor(line.length * 0.4); // 40%的位置
+                let splitPoint = midPoint;
+                
+                // 在中间位置附近寻找合适的分割点（逗号、句号等）
+                for (let i = midPoint - 10; i <= midPoint + 20 && i < line.length; i++) {
+                    if (line[i] === '，' || line[i] === ',' || line[i] === '。' || line[i] === '：' || line[i] === ':') {
+                        splitPoint = i;
+                        break;
+                    }
+                }
+                
+                const title = line.substring(0, splitPoint).trim();
+                const description = line.substring(splitPoint + 1).trim();
+                
+                if (title.length >= 5 && description.length >= 5) {
+                    return {
+                        title: title,
+                        description: description
+                    };
+                }
+            }
+            
+            // 默认处理：如果内容较短，全部作为标题
+            if (line.length <= 30) {
+                return {
+                    title: line.trim(),
+                    description: '详细内容请查看原文'
+                };
+            } else {
+                // 较长内容：前30个字符作为标题，剩余作为描述
+                return {
+                    title: line.substring(0, 30).trim() + '...',
+                    description: line.trim()
+                };
+            }
+        }
+
+        // 智能分离标题和内容
+        function intelligentTitleContentSplit(line) {
+            // 方法1: 查找逗号分割点（通常公司名+动作后有逗号）
+            const commaMatch = line.match(/^([^，,]+[公司|发布|推出|宣布|启动|开源|上线|更新|升级|优化][^，,]*)[，,](.+)$/);
+            if (commaMatch) {
+                return {
+                    title: commaMatch[1].trim(),
+                    description: commaMatch[2].trim()
+                };
+            }
+            
+            // 方法2: 查找冒号分割点
+            const colonIndex = line.indexOf('：');
+            if (colonIndex > 0 && colonIndex < line.length * 0.6) { // 冒号在前60%位置
+                return {
+                    title: line.substring(0, colonIndex).trim(),
+                    description: line.substring(colonIndex + 1).trim()
+                };
+            }
+            
+            // 方法3: 查找句号分割点（第一句作为标题）
+            const sentences = line.split(/[。！？\.!?]/);
+            if (sentences.length >= 2 && sentences[0].length > 10 && sentences[0].length < 80) {
+                return {
+                    title: sentences[0].trim() + '。',
+                    description: sentences.slice(1).join('').trim()
+                };
+            }
+            
+            // 方法4: 查找特定关键词后的内容作为描述
+            const keywordSplitPatterns = [
+                /^([^，,]*(?:推出|发布|宣布|启动|开源|上线|更新|升级|优化)[^，,]*)[，,]?(.+)$/,
+                /^([^，,]*(?:团队|公司|科技|AI)[^，,]*)[，,](.+)$/,
+                /^([^，,]*(?:模型|系统|平台|工具|应用)[^，,]*)[，,](.+)$/
+            ];
+            
+            for (let pattern of keywordSplitPatterns) {
+                const match = line.match(pattern);
+                if (match && match[1].length > 5 && match[1].length < 100) {
+                    return {
+                        title: match[1].trim(),
+                        description: match[2] ? match[2].trim() : match[1].trim()
+                    };
+                }
+            }
+            
+            // 方法5: 智能长度分割（如果内容很长）
+            if (line.length > 80) {
+                // 寻找合适的分割点（优先在句子边界）
+                let splitPoint = -1;
+                const preferredLength = Math.min(60, line.length * 0.4);
+                
+                // 在优选长度附近寻找标点符号
+                for (let i = preferredLength - 10; i < preferredLength + 20 && i < line.length; i++) {
+                    if (/[，,。！？\.!?]/.test(line[i])) {
+                        splitPoint = i;
+                        break;
+                    }
+                }
+                
+                if (splitPoint > 0) {
+                    return {
+                        title: line.substring(0, splitPoint + 1).trim(),
+                        description: line.substring(splitPoint + 1).trim()
+                    };
+                }
+            }
+            
+            // 默认方法：短内容作为标题，长内容分割
+            if (line.length <= 50) {
+                return {
+                    title: line,
+                    description: line
+                };
+            } else {
+                return {
+                    title: line.substring(0, 50) + '...',
+                    description: line
+                };
+            }
+        }
+
+        // 提取公司名称
+        function extractCompanyName(text) {
+            const companies = [
+                // AI相关公司
+                'OpenAI', 'ChatGPT', 'Anthropic', 'Claude', 'xAI', 'Grok', 'Genspark',
+                'DeepMind', 'Cohere', 'Stability AI', 'Midjourney', 'Runway',
+                
+                // 科技巨头
+                '微软', 'Microsoft', '苹果', 'Apple', '谷歌', 'Google', 
+                'Meta', 'Facebook', '亚马逊', 'Amazon', 'Tesla', '特斯拉',
+                '英伟达', 'NVIDIA', 'Intel', '英特尔', 'AMD',
+                
+                // 中国科技公司
+                '华为', 'Huawei', '腾讯', 'Tencent', '阿里巴巴', 'Alibaba',
+                '百度', 'Baidu', '字节跳动', 'ByteDance', '小米', 'Xiaomi',
+                '京东', 'JD', '美团', 'Meituan', '滴滴', 'Didi', '拼多多',
+                '小红书', '抖音', 'TikTok', '快手', '哔哩哔哩', 'B站',
+                '商汤', 'SenseTime', '旷视', 'Face++', '依图', '云从',
+                '宇树科技', '科大讯飞', 'iFlytek', '搜狗', 'Sogou',
+                
+                // 硬件制造商
+                'SK海力士', 'SK Hynix', '台积电', 'TSMC', '三星', 'Samsung',
+                '联想', 'Lenovo', '戴尔', 'Dell', 'HP', '惠普', 'IBM',
+                '宁德时代', 'CATL', '比亚迪', 'BYD', '理想', '蔚来', 'NIO',
+                '小鹏', 'XPeng', '威马', 'WM Motor',
+                
+                // 软件和服务
+                'GitHub', 'GitLab', 'Adobe', 'Salesforce', 'Slack',
+                'Netflix', 'Spotify', 'Uber', 'Airbnb', 'Zoom',
+                'Discord', 'Reddit', 'Twitter', 'X', 'LinkedIn',
+                
+                // 金融机构
+                '摩根大通', 'JPMorgan', '高盛', 'Goldman Sachs', '美联储', 'Fed',
+                '中国银行', '工商银行', '建设银行', '农业银行', '招商银行',
+                '支付宝', 'Alipay', '微信支付', 'WeChat Pay', '比特币', 'Bitcoin',
+                
+                // 传统企业和制造业
+                '通用汽车', 'GM', '福特', 'Ford', '丰田', 'Toyota', '大众', 'Volkswagen',
+                '波音', 'Boeing', '空客', 'Airbus', '埃克森美孚', 'ExxonMobil',
+                '沃尔玛', 'Walmart', '亚马逊', 'Amazon', '可口可乐', 'Coca-Cola',
+                '麦当劳', 'McDonald', '星巴克', 'Starbucks', '耐克', 'Nike',
+                '安踏', 'ANTA', '李宁', 'Li-Ning', '中石油', '中石化',
+                
+                // 政府机构和国际组织
+                '特朗普', 'Trump', '拜登', 'Biden', '白宫', 'White House',
+                '国务院', '外交部', '商务部', '财政部', '央行',
+                '联合国', 'UN', '世界银行', 'World Bank', 'IMF', '国际货币基金组织',
+                '欧盟', 'EU', '北约', 'NATO', '世贸组织', 'WTO',
+                '以色列', 'Israel', '巴勒斯坦', 'Palestine', '美国', '中国', '俄罗斯',
+                '英国', '法国', '德国', '日本', '韩国', '印度',
+                
+                // 媒体和娱乐
+                'CNN', 'BBC', '新华社', '人民日报', '华尔街日报', '纽约时报',
+                '迪士尼', 'Disney', '华纳', 'Warner', '环球', 'Universal',
+                'Netflix', 'Hulu', '爱奇艺', '优酷', '腾讯视频',
+                
+                // 医疗和生物技术
+                '辉瑞', 'Pfizer', '强生', 'Johnson & Johnson', '默克', 'Merck',
+                '拜耳', 'Bayer', '诺华', 'Novartis', '罗氏', 'Roche',
+                
+                // 能源和环保
+                '中海油', '国家电网', '南方电网', '三峡集团',
+                '壳牌', 'Shell', 'BP', '雪佛龙', 'Chevron',
+                
+                // 其他知名机构
+                'FireRed', 'UnifoLM', 'Codex', '警方', '法院', '检察院',
+                '央视', 'CCTV', '安全局', '税务局', '工商局'
+            ];
+            
+            // 查找所有出现的公司
+            const foundCompanies = [];
+            for (const company of companies) {
+                if (text.includes(company)) {
+                    foundCompanies.push(company);
+                }
+            }
+            
+            // 如果找到多个公司，用"和"连接
+            if (foundCompanies.length > 1) {
+                return foundCompanies.slice(0, 3).join('、'); // 最多显示3个公司
+            } else if (foundCompanies.length === 1) {
+                return foundCompanies[0];
+            }
+            
+            // 如果没有找到已知公司，尝试提取可能的公司名
+            const companyPattern = /([A-Za-z\u4e00-\u9fa5]+[公司|科技|集团|Corp|Inc|Ltd|LLC])/g;
+            const matches = text.match(companyPattern);
+            if (matches && matches.length > 0) {
+                return matches.slice(0, 2).join('、'); // 最多显示2个
+            }
+            
+            return '未知公司';
+        }
+
+        // 智能推测标签
+        function predictTag(text) {
+            const tagKeywords = {
+                'ai': {
+                    keywords: [
+                        // 基础AI关键词
+                        'AI', '人工智能', '机器学习', '深度学习', '神经网络', '大模型', '语言模型',
+                        // 具体AI产品
+                        'GPT', 'ChatGPT', 'Claude', 'Grok', 'Codex', 'Agent', 'LLM', 'TTS',
+                        // AI公司和技术
+                        'OpenAI', 'Anthropic', 'xAI', 'Genspark', 'FireRed', 'UnifoLM',
+                        // AI应用
+                        '智能助手', '智能合成', '音频合成', '对话合成', '音色克隆', '代码生成',
+                        '世界模型', '物理交互', '编码Agent', '思考时间', '基准测试'
+                    ],
+                    weight: 4
+                },
+                'hardware': {
+                    keywords: [
+                        '芯片', '处理器', '内存', 'CPU', 'GPU', '硬件', '设备', 'HBM', 
+                        '存储器', '半导体', '显卡', 'L20', '延迟', '响应速度', '性能',
+                        '算力', '计算', '服务器', '边缘计算'
+                    ],
+                    weight: 3
+                },
+                'mobile': {
+                    keywords: [
+                        '手机', 'iPhone', 'Android', '移动', 'App', '应用', '移动端', 
+                        '智能手机', 'iOS', '小程序', '移动设备', 'APP'
+                    ],
+                    weight: 2
+                },
+                'security': {
+                    keywords: [
+                        '安全', '隐私', '加密', '防护', '漏洞', '攻击', '网络安全', 
+                        '数据安全', '防火墙', '认证', '权限', '合规'
+                    ],
+                    weight: 2
+                },
+                'web': {
+                    keywords: [
+                        '网站', '浏览器', 'Web', '互联网', '在线', '网络', '搜索', '网页',
+                        '本地运行', '离线运行', '开源模型', '本地模型', '浏览器端'
+                    ],
+                    weight: 2
+                },
+                'design': {
+                    keywords: [
+                        '设计', 'UI', 'UX', '界面', '用户体验', '视觉', '交互', 
+                        '创意', '设计工具', '原型', '界面设计'
+                    ],
+                    weight: 2
+                },
+                'politics': {
+                    keywords: [
+                        '政治', '政府', '总统', '总理', '国务院', '外交部', '大使馆',
+                        '特朗普', '拜登', '白宫', '国会', '议会', '选举', '投票',
+                        '外交', '会谈', '访问', '会议', '峰会', '协议', '条约',
+                        '制裁', '谈判', '政策', '法案', '法律'
+                    ],
+                    weight: 3
+                },
+                'finance': {
+                    keywords: [
+                        '股市', '股票', '金融', '银行', '投资', '基金', '证券',
+                        '收盘', '上涨', '下跌', '涨幅', '跌幅', '市值', '融资',
+                        'IPO', '上市', '财报', '营收', '利润', '经济', 'GDP',
+                        '货币', '汇率', '美元', '人民币', '欧元', '利率',
+                        '比特币', '数字货币', '区块链', '加密货币'
+                    ],
+                    weight: 3
+                },
+                'military': {
+                    keywords: [
+                        '军事', '军队', '战争', '冲突', '袭击', '导弹', '轰炸',
+                        '以色列', '以军', '巴勒斯坦', '加沙', '哈马斯', '真主党',
+                        '俄乌', '乌克兰', '俄罗斯', '北约', '军演', '制裁',
+                        '安全', '防务', '武器', '军备', '撤离', '警告'
+                    ],
+                    weight: 3
+                },
+                'business': {
+                    keywords: [
+                        '企业', '公司', '商业', '市场', '销售', '营销', '品牌',
+                        '合作', '合并', '收购', '重组', '董事', 'CEO', '总裁',
+                        '业绩', '财务', '报告', '发布', '推出', '上线', '升级'
+                    ],
+                    weight: 2
+                },
+                'social': {
+                    keywords: [
+                        '社会', '民众', '抗议', '示威', '游行', '罢工', '事故',
+                        '灾害', '地震', '台风', '洪水', '火灾', '事件', '案件',
+                        '诈骗', '犯罪', '警方', '调查', '逮捕', '法院', '判决'
+                    ],
+                    weight: 2
+                },
+                'sports': {
+                    keywords: [
+                        '体育', '运动', '比赛', '赛事', '足球', '篮球', '网球',
+                        '奥运', '世界杯', '联赛', '球员', '教练', '冠军', '胜利',
+                        '女排', '男足', '游泳', '田径', '体操'
+                    ],
+                    weight: 2
+                },
+                'entertainment': {
+                    keywords: [
+                        '娱乐', '电影', '电视', '明星', '演员', '导演', '音乐',
+                        '综艺', '节目', '演出', '音乐会', '演唱会', '票房',
+                        '预告', '首映', '上映', '播出', '收视率'
+                    ],
+                    weight: 2
+                },
+                'weather': {
+                    keywords: [
+                        '天气', '气象', '降雪', '降温', '冷空气', '台风', '暴雨',
+                        '高温', '低温', '气温', '温度', '气候', '预报', '警报'
+                    ],
+                    weight: 2
+                },
+                'tech': {
+                    keywords: [
+                        '科技', '技术', '开发', '软件', '程序', '代码', '编程', 
+                        '合作', '发布', '推出', '更新', '升级', '优化', '开源',
+                        '平台', '系统', '工具', '框架', '架构', '指南', '评估'
+                    ],
+                    weight: 1
+                }
+            };
+            
+            // 计算每个标签的得分
+            const scores = {};
+            
+            for (const [tag, config] of Object.entries(tagKeywords)) {
+                scores[tag] = 0;
+                for (const keyword of config.keywords) {
+                    if (text.includes(keyword)) {
+                        scores[tag] += config.weight;
+                    }
+                }
+            }
+            
+            // 找到得分最高的标签
+            let maxScore = 0;
+            let bestTag = 'tech';
+            
+            for (const [tag, score] of Object.entries(scores)) {
+                if (score > maxScore) {
+                    maxScore = score;
+                    bestTag = tag;
+                }
+            }
+            
+            // 特殊规则：如果包含特定的AI关键词，优先判定为AI
+            const strongAIKeywords = ['GPT', 'ChatGPT', 'OpenAI', '大模型', '语言模型'];
+            const hasStrongAI = strongAIKeywords.some(keyword => text.includes(keyword));
+            
+            // 特殊规则：如果是合作、技术进步等，且没有强AI特征，判定为科技
+            const techCollabKeywords = ['合作', '深化合作', '技术进步', '推动', '进一步'];
+            const hasTechCollab = techCollabKeywords.some(keyword => text.includes(keyword));
+            
+            if (hasStrongAI) {
+                return 'ai';
+            } else if (hasTechCollab && !hasStrongAI && maxScore <= 2) {
+                return 'tech';
+            }
+            
+            return bestTag;
+        }
+
+        // 添加带数据的新闻条目
+        function addNewsItemWithData(newsData) {
+            newsItemCount++;
+            const container = document.getElementById('newsItems');
+            
+            const newsItem = document.createElement('div');
+            newsItem.className = 'news-item';
+            newsItem.dataset.index = newsItemCount;
+            
+            newsItem.innerHTML = `
+                <button type="button" class="remove-btn" onclick="removeNewsItem(${newsItemCount})">
+                    <i class="fas fa-times"></i>
+                </button>
+                
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <label class="form-label">标题</label>
+                        <input type="text" class="form-control news-title" 
+                               value="${newsData.title}" placeholder="请输入新闻标题">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">公司/机构</label>
+                        <input type="text" class="form-control news-company" 
+                               value="${newsData.company}" placeholder="请输入公司名称">
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">描述</label>
+                    <textarea class="form-control news-description" rows="3" 
+                              placeholder="请输入新闻描述">${newsData.description}</textarea>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">标签类型</label>
+                    <div class="tag-selector">
+                        ${Object.entries(newsTags).map(([key, tag]) => 
+                            `<div class="tag-option ${key === newsData.tag ? 'selected' : ''}" data-tag="${key}">
+                                <i class="fas ${tag.icon}"></i> ${tag.name}
+                             </div>`
+                        ).join('')}
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(newsItem);
+            
+            // 设置标签选择器
+            const tagOptions = newsItem.querySelectorAll('.tag-option');
+            tagOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    tagOptions.forEach(opt => opt.classList.remove('selected'));
+                    option.classList.add('selected');
+                });
+            });
+        }
+
+        // 清空所有新闻
+        function clearAllNews() {
+            const container = document.getElementById('newsItems');
+            container.innerHTML = '';
+            newsItemCount = 0;
+        }
+
+        // 预览生成功能
+        function setupPreviewGeneration() {
+            document.getElementById('generatePreview').addEventListener('click', generatePreview);
+        }
+
+        function generatePreview() {
+            const reportData = collectFormData();
+            
+            if (!reportData.report_name.trim()) {
+                alert('请输入日报名称');
+                return;
+            }
+            
+            if (reportData.news_items.length === 0) {
+                alert('请添加至少一条新闻');
+                return;
+            }
+
+            // 显示加载动画
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('previewSection').style.display = 'none';
+
+            fetch('/generate_report', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(reportData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loading').style.display = 'none';
+                
+                if (data.success) {
+                    generatedHtml = data.html;
+                    const iframe = document.getElementById('previewIframe');
+                    iframe.srcdoc = generatedHtml;
+                    document.getElementById('previewSection').style.display = 'block';
+                    document.getElementById('exportImage').disabled = false;
+                } else {
+                    alert('生成失败：' + data.error);
+                }
+            })
+            .catch(error => {
+                document.getElementById('loading').style.display = 'none';
+                console.error('生成错误:', error);
+                alert('生成失败，请重试');
+            });
+        }
+
+        // 图片导出功能
+        function setupImageExport() {
+            document.getElementById('exportImage').addEventListener('click', exportImage);
+        }
+
+        function exportImage() {
+            if (!generatedHtml) {
+                alert('请先生成预览');
+                return;
+            }
+
+            const exportBtn = document.getElementById('exportImage');
+            const originalText = exportBtn.innerHTML;
+            exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 生成图片中...';
+            exportBtn.disabled = true;
+
+            // 创建临时的iframe来渲染HTML
+            const iframe = document.createElement('iframe');
+            iframe.style.position = 'absolute';
+            iframe.style.left = '-9999px';
+            iframe.style.width = '750px';
+            iframe.style.height = '800px';
+            document.body.appendChild(iframe);
+
+            // 写入HTML内容
+            iframe.contentDocument.write(generatedHtml);
+            iframe.contentDocument.close();
+
+            // 等待iframe加载完成
+            iframe.onload = function() {
+                setTimeout(() => {
+                    // 使用html2canvas截图iframe内容
+                    html2canvas(iframe.contentDocument.body, {
+                        scale: 2, // 高质量
+                        useCORS: true,
+                        allowTaint: true,
+                        backgroundColor: '#f5f7fa',
+                        width: 750,
+                        height: iframe.contentDocument.body.scrollHeight,
+                        scrollX: 0,
+                        scrollY: 0
+                    }).then(canvas => {
+                        // 转换为图片并下载
+                        const imgData = canvas.toDataURL('image/png');
+                        const link = document.createElement('a');
+                        link.download = `日报_${new Date().toISOString().slice(0, 10)}_${new Date().toTimeString().slice(0, 8).replace(/:/g, '')}.png`;
+                        link.href = imgData;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        // 清理iframe
+                        document.body.removeChild(iframe);
+                        
+                        // 恢复按钮
+                        exportBtn.innerHTML = originalText;
+                        exportBtn.disabled = false;
+                        
+                        alert('✅ 图片导出成功！已保存到下载文件夹');
+                        
+                    }).catch(error => {
+                        console.error('截图失败:', error);
+                        document.body.removeChild(iframe);
+                        exportBtn.innerHTML = originalText;
+                        exportBtn.disabled = false;
+                        alert('❌ 图片生成失败，请重试');
+                    });
+                }, 1000); // 等待1秒确保内容完全渲染
+            };
+        }
+
+        // 收集表单数据
+        function collectFormData() {
+            const reportName = document.getElementById('reportName').value.trim();
+            const signature = document.getElementById('signature').value.trim();
+            const showCreator = document.getElementById('showCreator').checked;
+            
+            // 收集新闻条目
+            const newsItems = [];
+            const newsElements = document.querySelectorAll('.news-item');
+            
+            newsElements.forEach(item => {
+                const title = item.querySelector('.news-title').value.trim();
+                const company = item.querySelector('.news-company').value.trim();
+                const description = item.querySelector('.news-description').value.trim();
+                const selectedTag = item.querySelector('.tag-option.selected');
+                
+                if (title && description) {
+                    newsItems.push({
+                        title: title,
+                        company: company || '未知公司',
+                        description: description,
+                        tag: selectedTag ? selectedTag.dataset.tag : 'tech'
+                    });
+                }
+            });
+
+            // 收集颜色设置
+            let colorConfig = {};
+            if (currentTheme === 'custom') {
+                const primary = document.getElementById('customPrimary').value;
+                const secondary = document.getElementById('customSecondary').value;
+                const accent = document.getElementById('customAccent').value;
+                
+                colorConfig = {
+                    primary: primary,
+                    secondary: secondary,
+                    accent: accent,
+                    header_gradient: `linear-gradient(135deg, ${primary} 0%, ${secondary} 100%)`,
+                    footer_gradient: `linear-gradient(135deg, ${secondary} 0%, ${primary} 100%)`
+                };
+            }
+
+            return {
+                report_name: reportName,
+                logo_data: currentLogo,
+                color_theme: currentTheme,
+                custom_colors: colorConfig,
+                news_items: newsItems,
+                signature: signature,
+                show_creator: showCreator
+            };
+        }
+    </script>
+</body>
+</html>
